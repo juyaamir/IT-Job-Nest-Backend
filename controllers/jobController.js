@@ -1,11 +1,9 @@
-// fetching jobs from the database of url https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
-// and returning the response to the client
 
 import axios from 'axios';
 
 export const getJobs = async (req, res) => {
     try {
-        const response = await axios.get(`https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs`, {
+        const response = await axios.get(process.env.JOB_COUNT_API, {
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': 'jobboerse-jobsuche'
