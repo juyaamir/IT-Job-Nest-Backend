@@ -1,5 +1,6 @@
 import axios from 'axios';
 import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
 
 //@desc Register a new user
 
@@ -12,14 +13,16 @@ export const registerUser = async (req, res) => {
     const user = await User.findOne({email});
     if(user) {
         return res.status(400).send({message: `User already exists`});
-        
     };
 
     try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
         const newUser = await User.create({
             name,
             email,
-            password,
+            password: hashedPassword,
         });
         res.status(201).send({message: `User created successfully`});
     } catch (error) {
@@ -28,7 +31,7 @@ export const registerUser = async (req, res) => {
     }
 };
 
-//@desc login a user
+//@desc login a user and compare the password
 export const loginUser = async (req, res) => {
     const {email, password} = req.body;
     if( !email || !password ) {
@@ -36,10 +39,16 @@ export const loginUser = async (req, res) => {
     };
 
     try {
-        const user = await User.findOne({email, password});
+
+        const user = await User.findOne({email});
         if(!user) {
+
             return res.status(401).send({message: `Invalid credential!`});
         };
+        const isMatch = await bcrypt.compare(password, user.password);
+        if(!isMatch) {
+            return res.status(401).send({message: `Invalid credential!`});
+        }
         res.status(200).send({message: `Logged in successfully!`});
     } catch {
         res.status(500).send({error: `Server Error ${error}`})
