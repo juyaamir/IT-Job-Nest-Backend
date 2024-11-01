@@ -1,6 +1,7 @@
 import axios from 'axios';
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 //@desc Register a new user
 
@@ -31,7 +32,7 @@ export const registerUser = async (req, res) => {
     }
 };
 
-//@desc login a user and compare the password
+//@desc login a user and compare the password and create a token
 export const loginUser = async (req, res) => {
     const {email, password} = req.body;
     if( !email || !password ) {
@@ -42,15 +43,17 @@ export const loginUser = async (req, res) => {
 
         const user = await User.findOne({email});
         if(!user) {
-
             return res.status(401).send({message: `Invalid credential!`});
         };
         const isMatch = await bcrypt.compare(password, user.password);
         if(!isMatch) {
             return res.status(401).send({message: `Invalid credential!`});
         }
-        res.status(200).send({message: `Logged in successfully!`});
-    } catch {
+
+        //create json token
+        const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: "1h"})
+        res.status(200).send({message: `Logged in successfully!`, token});
+    } catch(error) {
         res.status(500).send({error: `Server Error ${error}`})
     }
 };
@@ -93,4 +96,20 @@ export const updateUser = async (req, res) => {
     } catch (error) {
         res.status(500).send({message: `Internal Server Error`});
     }
-}
+};
+
+//@desc get user profile by id and send it to the client
+export const getProfile = async (req, res) => {
+    const id = req.user.id;
+    try {
+        const user = await User.findById(id);
+        if(!user) {
+            return res.status(404).send({message: `User not found`});
+        };
+        res.status(200).send({profile: user});
+    } catch (error) {
+        res.status(500).send({message: `Internal Server Error`});
+    }
+} 
+
+
